@@ -2,6 +2,9 @@ def commit_id
 
 pipeline {
     agent any
+    tools {
+        maven 'Maven_Auto_Install'
+    }
     
     stages {
         stage('Preparation') {
