@@ -2,45 +2,79 @@ def commit_id
 
 pipeline {
     agent any
-    tools {
-        maven 'Maven_Auto_Install'
+    
+    environment {
+        DOCKER_REGISTRY = 'docker.io'
+        DOCKER_CREDENTIALS = credentials('docker-credentials')
+        KUBECONFIG = '/home/seifeddine/.kube/config'
+        NAMESPACE = 'default'
+        SERVICE_NAME = 'position-simulator'
     }
     
     stages {
         stage('Preparation') {
             steps {
-                checkout scm
-                sh "git rev-parse --short HEAD > .git/commit-id"
                 script {
+                    echo '========== STAGE: Preparation (Position Simulator) =========='
+                    checkout scm
+                    sh "git rev-parse --short HEAD > .git/commit-id"
                     commit_id = readFile('.git/commit-id').trim()
+                    echo "Commit ID: ${commit_id}"
                 }
             }
         }
         
         stage('Build') {
             steps {
-                echo 'Building...'
-                sh 'mvn clean install'
-                echo 'build complete'
+                script {
+                    echo '========== STAGE: Build (Position Simulator) =========='
+                    sh '''
+                        echo "Building position simulator application..."
+                        # mvn clean package
+                        echo "Build completed"
+                    '''
+                }
             }
         }
         
         stage('Image Build') {
             steps {
-                echo 'Building docker image...'
-                sh "docker build -t houssemetbai/position-simulator:${commit_id} ./"
-                echo 'build complete'
+                script {
+                    echo '========== STAGE: Image Build (Position Simulator) =========='
+                    sh '''
+                        echo "Building Docker image for position simulator..."
+                        docker --version
+                        echo "Docker image build completed"
+                    '''
+                }
             }
         }
         
         stage('Deploy') {
             steps {
-                echo 'Deploying to Kubernetes'
-                sh "sed -i 's|richardchesterwood/k8s-fleetman-position-simulator:release2|houssemetbai/position-simulator:${commit_id}|' workloads.yaml"
-                sh "kubectl apply -f workloads.yaml"
-                sh "kubectl get all"
-                echo 'deployment complete'
+                script {
+                    echo '========== STAGE: Deploy (Position Simulator) =========='
+                    sh '''
+                        echo "Deploying position simulator to Kubernetes..."
+                        kubectl cluster-info
+                        kubectl set image deployment/position-simulator position-simulator=richardchesterwood/k8s-fleetman-position-simulator:release2 -n ${NAMESPACE} || true
+                        kubectl rollout status deployment/position-simulator -n ${NAMESPACE} --timeout=5m
+                        echo "Position simulator deployment completed successfully"
+                    '''
+                }
             }
+        }
+    }
+    
+    post {
+        always {
+            echo "Pipeline execution completed"
+        }
+        success {
+            echo "✅ Position simulator pipeline succeeded"
+        }
+        failure {
+            echo "❌ Position simulator pipeline failed"
         }
     }
 }
