@@ -59,9 +59,7 @@ pipeline {
                         /opt/sonar-scanner/bin/sonar-scanner \
                             -Dsonar.projectKey=position-simulator \
                             -Dsonar.sources=. \
-                            -Dsonar.host.url=http://192.168.79.129:9000 \
-                            -Dsonar.login=admin \
-                            -Dsonar.password=admin || true
+                            -Dsonar.host.url=http://192.168.79.129:9000 || true
                         echo "Code quality analysis completed"
                     '''
                 }
